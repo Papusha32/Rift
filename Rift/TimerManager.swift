@@ -1,6 +1,12 @@
 import Foundation
 import Combine
 
+private extension Int {
+    func clamped(fallback: Int) -> Int {
+        self > 0 ? self : fallback
+    }
+}
+
 enum TimerState {
     case idle
     case running
@@ -12,7 +18,9 @@ class TimerManager: ObservableObject {
     @Published var totalSeconds: Int = 25 * 60
     @Published var remainingSeconds: Int = 25 * 60
     @Published var state: TimerState = .idle
-    @Published var selectedMinutes: Int = 25
+    @Published var selectedMinutes: Int = UserDefaults.standard.integer(forKey: "lastSelectedMinutes").clamped(fallback: 25) {
+        didSet { UserDefaults.standard.set(selectedMinutes, forKey: "lastSelectedMinutes") }
+    }
 
     var isRunning: Bool { state == .running }
     var isPaused: Bool { state == .paused }

@@ -264,6 +264,13 @@ struct TimeInputView: View {
         .onChange(of: dismissTrigger) { _ in
             editingField = nil
         }
+        .onChange(of: selectedMinutes) { _ in
+            // Cancel editing when value changes externally (e.g. ruler drag)
+            if editingField != nil {
+                editingField = nil
+                NSApp.keyWindow?.makeFirstResponder(nil)
+            }
+        }
     }
 
     func dismissEditing() {
