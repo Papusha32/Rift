@@ -68,11 +68,15 @@ class SoundManager {
             return
         }
 
+        let stopAfter: Double
         if autoMute && muteAfterSeconds > 0 {
-            let work = DispatchWorkItem { [weak self] in self?.stop() }
-            muteWorkItem = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(muteAfterSeconds), execute: work)
+            stopAfter = Double(muteAfterSeconds)
+        } else {
+            stopAfter = 60.0
         }
+        let work = DispatchWorkItem { [weak self] in self?.stop() }
+        muteWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + stopAfter, execute: work)
     }
 
     func stop() {

@@ -196,7 +196,7 @@ struct ProgressTickView: View {
                         let alpha: CGFloat
                         let lineW: CGFloat
                         if elapsed {
-                            alpha = isMajor ? 0.06 : isMedium ? 0.04 : 0.02
+                            alpha = isMajor ? 0.25 : isMedium ? 0.15 : 0.08
                             lineW = 0.5
                         } else {
                             alpha = isMajor ? 1.0 : isMedium ? 0.75 : 0.5

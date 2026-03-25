@@ -11,7 +11,7 @@ struct SettingsView: View {
     @AppStorage("selectedSoundPath") private var soundPath = SoundManager.defaultSoundPath
     @AppStorage("alarmVolume") private var alarmVolume = 0.7
     @AppStorage("autoMuteEnabled") private var autoMuteEnabled = true
-    @AppStorage("autoMuteSeconds") private var autoMuteSeconds = 5
+    @AppStorage("autoMuteSeconds") private var autoMuteSeconds = 10
 
     // Display
     @AppStorage("floatingDisplayEnabled") private var floatingEnabled = false
@@ -75,7 +75,7 @@ struct SettingsView: View {
                         Image(systemName: "speaker.fill")
                             .font(.system(size: 9))
                             .foregroundColor(Color(white: 0.4))
-                        Slider(value: $alarmVolume, in: 0...1)
+                        WhiteSlider(value: $alarmVolume)
                         Image(systemName: "speaker.wave.3.fill")
                             .font(.system(size: 9))
                             .foregroundColor(Color(white: 0.4))
@@ -192,5 +192,48 @@ struct PresetStepper: View {
         .padding(.vertical, 2)
         .background(Color(white: 0.2))
         .clipShape(RoundedRectangle(cornerRadius: 5))
+    }
+}
+
+// MARK: - White Slider
+
+struct WhiteSlider: View {
+    @Binding var value: Double
+    private let trackHeight: CGFloat = 4
+    private let thumbSize: CGFloat = 14
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width - thumbSize
+            let offsetX = w * value
+            ZStack(alignment: .leading) {
+                // Track background
+                Capsule()
+                    .fill(Color(white: 0.3))
+                    .frame(height: trackHeight)
+                    .padding(.horizontal, thumbSize / 2)
+                // Track filled
+                Capsule()
+                    .fill(Color.white)
+                    .frame(width: offsetX + thumbSize / 2, height: trackHeight)
+                    .padding(.leading, thumbSize / 2)
+                // Thumb
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: thumbSize, height: thumbSize)
+                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                    .offset(x: offsetX)
+            }
+            .frame(height: geo.size.height)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { drag in
+                        let x = drag.location.x - thumbSize / 2
+                        value = min(max(Double(x / w), 0), 1)
+                    }
+            )
+        }
+        .frame(height: thumbSize)
     }
 }
