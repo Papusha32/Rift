@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'FocusDrop' in project 'FocusDrop' (no dependencies)

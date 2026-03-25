@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(xcode-select -p)",
-      "Read(//Applications/**)"
-    ]
-  }
-}
