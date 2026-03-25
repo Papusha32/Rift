@@ -15,7 +15,6 @@ struct SettingsView: View {
 
     // Display
     @AppStorage("floatingDisplayEnabled") private var floatingEnabled = false
-    @AppStorage("autoShowOnComplete") private var autoShow = true
     @AppStorage("launchAtLogin") private var launchAtLogin = false
 
     private let labelColor = Color(white: 0.55)
@@ -95,13 +94,6 @@ struct SettingsView: View {
 
             Toggle(isOn: $floatingEnabled) {
                 Text("floating timer")
-                    .font(.system(size: 12))
-                    .foregroundColor(labelColor)
-            }
-            .toggleStyle(.checkbox)
-
-            Toggle(isOn: $autoShow) {
-                Text("auto-show on complete")
                     .font(.system(size: 12))
                     .foregroundColor(labelColor)
             }

@@ -191,17 +191,24 @@ struct ProgressTickView: View {
                                            : isMedium ? size.height * 0.4
                                            : size.height * 0.22
                         let y = (size.height - tickH) / 2
-                        // Ticks to the right of cursor are dimmed (elapsed)
-                        let dimmed = Double(x) > cursorX
-                        let base: CGFloat = isMajor ? 0.5 : isMedium ? 0.3 : 0.15
-                        let alpha = dimmed ? base * 0.3 : base
+                        // Ticks to the left of cursor = remaining (bright), right = elapsed (very dim)
+                        let elapsed = Double(x) > cursorX
+                        let alpha: CGFloat
+                        let lineW: CGFloat
+                        if elapsed {
+                            alpha = isMajor ? 0.06 : isMedium ? 0.04 : 0.02
+                            lineW = 0.5
+                        } else {
+                            alpha = isMajor ? 1.0 : isMedium ? 0.75 : 0.5
+                            lineW = isMajor ? 1.4 : 1.0
+                        }
 
                         var path = Path()
                         path.move(to: CGPoint(x: x, y: y))
                         path.addLine(to: CGPoint(x: x, y: y + tickH))
                         ctx.stroke(path,
                                    with: .color(.white.opacity(Double(alpha))),
-                                   lineWidth: 0.6)
+                                   lineWidth: lineW)
                     }
                 }
                 .frame(width: w, height: h)

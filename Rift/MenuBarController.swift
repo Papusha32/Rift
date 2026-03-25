@@ -8,6 +8,7 @@ class MenuBarController: NSObject {
     private var timerManager: TimerManager
     private var floatingWindowController: FloatingWindowController?
     private var cancellables: [Any] = []
+    private var globalClickMonitor: Any?
 
     /// Fixed pill width so the menu bar icon never jumps
     private var fixedPillWidth: CGFloat = 0
@@ -80,9 +81,28 @@ class MenuBarController: NSObject {
         guard let button = statusItem?.button else { return }
         popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover?.contentViewController?.view.window?.makeKey()
+        startGlobalClickMonitor()
     }
 
-    private func closePopover() { popover?.performClose(nil) }
+    private func closePopover() {
+        popover?.performClose(nil)
+        stopGlobalClickMonitor()
+    }
+
+    private func startGlobalClickMonitor() {
+        stopGlobalClickMonitor()
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            guard self?.popover?.isShown == true else { return }
+            self?.closePopover()
+        }
+    }
+
+    private func stopGlobalClickMonitor() {
+        if let monitor = globalClickMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalClickMonitor = nil
+        }
+    }
 
     @objc private func togglePopover() {
         popover?.isShown == true ? closePopover() : showPopover()
@@ -142,9 +162,6 @@ class MenuBarController: NSObject {
 
         sendCompletionNotification()
 
-        if defs.bool(forKey: "autoShowOnComplete") {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.showPopover() }
-        }
     }
 
     // MARK: - Menu Bar Pill (fixed width)

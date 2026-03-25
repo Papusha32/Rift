@@ -102,8 +102,8 @@ class TimerManager: ObservableObject {
                 self.remainingSeconds -= 1
             }
             if self.remainingSeconds == 0 {
-                self.state = .completed
                 self.cancelTimer()
+                self.state = .idle
                 self.onCompletion?()
             }
         }

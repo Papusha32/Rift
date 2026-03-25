@@ -15,40 +15,31 @@ class SoundManager {
     private var audioPlayer: AVAudioPlayer?
     private var muteWorkItem: DispatchWorkItem?
 
-    /// Scans macOS system sounds + iOS-style alert/ringtones from ToneLibrary
+    /// Curated gentle sounds suitable for timer alerts
+    private static let allowedSounds: Set<String> = [
+        "Glass", "Breeze", "Crystal", "Heroine", "Ping",
+        "Pop", "Purr", "Sosumi", "Tink", "Blow",
+        "Bottle", "Frog", "Morse", "Submarine"
+    ]
+
     static let availableSounds: [SoundItem] = {
         var items: [SoundItem] = []
-        let exts: Set<String> = ["aiff", "aif", "wav", "caf", "m4r", "mp3"]
+        let exts: Set<String> = ["aiff", "aif", "wav", "caf"]
 
-        let dirs = [
-            "/System/Library/Sounds",
-            "/System/Library/PrivateFrameworks/ToneLibrary.framework/Versions/A/Resources/AlertTones",
-            "/System/Library/PrivateFrameworks/ToneLibrary.framework/Versions/A/Resources/Ringtones",
-        ]
+        let base = URL(fileURLWithPath: "/System/Library/Sounds")
+        guard let enumerator = FileManager.default.enumerator(
+            at: base, includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return [] }
 
-        for dir in dirs {
-            let base = URL(fileURLWithPath: dir)
-            guard let enumerator = FileManager.default.enumerator(
-                at: base, includingPropertiesForKeys: nil,
-                options: [.skipsHiddenFiles]
-            ) else { continue }
-
-            while let fileURL = enumerator.nextObject() as? URL {
-                guard exts.contains(fileURL.pathExtension.lowercased()) else { continue }
-                let name = fileURL.deletingPathExtension().lastPathComponent
-                items.append(SoundItem(name: name, url: fileURL))
-            }
+        while let fileURL = enumerator.nextObject() as? URL {
+            guard exts.contains(fileURL.pathExtension.lowercased()) else { continue }
+            let name = fileURL.deletingPathExtension().lastPathComponent
+            guard allowedSounds.contains(name) else { continue }
+            items.append(SoundItem(name: name, url: fileURL))
         }
 
-        // Deduplicate by name (prefer first found), sort
-        var seen = Set<String>()
-        var unique: [SoundItem] = []
-        for item in items {
-            if seen.insert(item.name).inserted {
-                unique.append(item)
-            }
-        }
-        return unique.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        return items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }()
 
     /// Default sound path for first launch
