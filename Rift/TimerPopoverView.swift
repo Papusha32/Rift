@@ -21,7 +21,7 @@ struct TimerPopoverView: View {
                 .contentShape(Rectangle())
                 .onTapGesture {
                     dismissDigitEditing.toggle()
-                    NSApp.keyWindow?.makeFirstResponder(nil)
+                    NSApp.windows.forEach { $0.makeFirstResponder(nil) }
                 }
             VStack(spacing: 0) {
                 switch timerManager.state {
@@ -47,7 +47,13 @@ struct TimerPopoverView: View {
             // 3 Presets + "..."
             HStack(spacing: 4) {
                 ForEach(Array(presets.enumerated()), id: \.offset) { _, p in
-                    Button { timerManager.selectedMinutes = p } label: {
+                    Button {
+                        dismissDigitEditing.toggle()
+                        NSApp.windows.forEach { $0.makeFirstResponder(nil) }
+                        DispatchQueue.main.async {
+                            timerManager.selectedMinutes = p
+                        }
+                    } label: {
                         Text("\(p)m")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(timerManager.selectedMinutes == p ? .white : Color(white: 0.5))
@@ -73,9 +79,15 @@ struct TimerPopoverView: View {
             .padding(.top, 4)
 
             Spacer(minLength: 4)
+                .contentShape(Rectangle())
+                .onTapGesture { dismissDigitEditing.toggle() }
 
             HStack(alignment: .lastTextBaseline) {
-                Button { timerManager.start(minutes: timerManager.selectedMinutes) } label: {
+                Button {
+                    dismissDigitEditing.toggle()
+                    NSApp.windows.forEach { $0.makeFirstResponder(nil) }
+                    timerManager.start(minutes: timerManager.selectedMinutes)
+                } label: {
                     Text("start")
                         .font(.system(size: 13))
                         .foregroundColor(Color(white: 0.7))
@@ -83,6 +95,8 @@ struct TimerPopoverView: View {
                 .buttonStyle(.plain)
 
                 Spacer()
+                    .contentShape(Rectangle())
+                    .onTapGesture { dismissDigitEditing.toggle() }
 
                 TimeInputView(selectedMinutes: $timerManager.selectedMinutes, dismissTrigger: dismissDigitEditing)
             }
@@ -246,8 +260,7 @@ struct TimeInputView: View {
                 onCommit: { newVal in
                     selectedMinutes = newVal * 60 + mins
                     editingField = nil
-                },
-                onCancel: { editingField = nil }
+                }
             )
             Text("H")
                 .font(.system(size: 12, weight: .medium))
@@ -261,8 +274,7 @@ struct TimeInputView: View {
                 onCommit: { newVal in
                     selectedMinutes = hours * 60 + min(newVal, 59)
                     editingField = nil
-                },
-                onCancel: { editingField = nil }
+                }
             )
             Text("M")
                 .font(.system(size: 12, weight: .medium))
@@ -270,23 +282,13 @@ struct TimeInputView: View {
         }
         .onChange(of: dismissTrigger) { _ in
             editingField = nil
+            NSApp.windows.forEach { $0.makeFirstResponder(nil) }
         }
-        .onChange(of: selectedMinutes) { _ in
-            // Cancel editing when value changes externally (e.g. ruler drag)
-            if editingField != nil {
-                editingField = nil
-                NSApp.keyWindow?.makeFirstResponder(nil)
-            }
-        }
-    }
-
-    func dismissEditing() {
-        editingField = nil
     }
 }
 
 
-// MARK: - Digit cell (label / text field)
+// MARK: - Digit cell (label / NSTextField)
 
 struct DigitCell: View {
     let displayValue: Int
@@ -294,21 +296,19 @@ struct DigitCell: View {
     let isEditing: Bool
     let onTap: () -> Void
     let onCommit: (Int) -> Void
-    let onCancel: () -> Void
 
     @State private var text = ""
     @FocusState private var isFocused: Bool
 
     var body: some View {
         ZStack {
-            if !isEditing {
-                Text(String(format: "%02d", displayValue))
-                    .font(.system(size: 28, weight: .thin, design: .monospaced))
-                    .foregroundColor(.white)
-                    .frame(width: 40, alignment: .trailing)
-                    .contentShape(Rectangle())
-                    .onTapGesture { onTap() }
-            }
+            Text(String(format: "%02d", displayValue))
+                .font(.system(size: 28, weight: .thin, design: .monospaced))
+                .foregroundColor(.white)
+                .frame(width: 40, alignment: .trailing)
+                .contentShape(Rectangle())
+                .onTapGesture { onTap() }
+                .opacity(isEditing ? 0 : 1)
 
             if isEditing {
                 TextField("00", text: $text)
@@ -334,7 +334,16 @@ struct DigitCell: View {
                             onCommit(max(0, n))
                         }
                     }
-                    .onSubmit { isFocused = false }
+                    .onSubmit {
+                        let n = min(Int(text) ?? 0, maxValue)
+                        onCommit(max(0, n))
+                    }
+            }
+        }
+        .onChange(of: isEditing) { editing in
+            if !editing && !text.isEmpty {
+                let n = min(Int(text) ?? 0, maxValue)
+                onCommit(max(0, n))
             }
         }
     }
