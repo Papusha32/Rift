@@ -5,8 +5,8 @@ A minimal macOS menu bar timer app. Set a duration, start the countdown, and get
 ## Features
 
 - **Menu bar pill** — always visible countdown in the macOS menu bar
-- **Tick ruler** — drag to set time (1–120 min) with haptic feedback
-- **3 customizable presets** — quick-access buttons (e.g. 5m, 20m, 50m), persisted across restarts
+- **Tick ruler** — drag to set time (1–120 min) with haptic feedback, or type any duration manually (up to 99h 59m)
+- **3 customizable presets** — quick-access buttons with user-defined values, persisted across restarts
 - **Gentle alarm sounds** — curated system sounds (Glass, Breeze, Crystal, etc.) with adjustable volume and auto-mute
 - **Floating timer** — optional always-on-top overlay during countdown
 - **Launch at login** — start automatically with macOS
