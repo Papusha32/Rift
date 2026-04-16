@@ -15,7 +15,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var menuBarController: MenuBarController?
 
     private let updateStore = UpdateStore()
-    private var updateWindowController: UpdateWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Register UserDefaults defaults
@@ -35,10 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ])
 
         NSApp.setActivationPolicy(.accessory)
-        menuBarController = MenuBarController()
-
-        // Set up update window and silently check for updates
-        updateWindowController = UpdateWindowController(updateStore: updateStore)
+        menuBarController = MenuBarController(updateStore: updateStore)
         updateStore.checkForUpdates()
     }
 

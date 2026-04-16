@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rift — Update Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #111;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 24px;
+  }
+
+  .label {
+    color: rgba(255,255,255,0.2);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ─── Rift popover ─── */
+  .popover {
+    width: 340px;
+    background: #212121;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  }
+
+  /* main content (unchanged from real Rift) */
+  .main-content {
+    padding: 10px 14px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ruler */
+  .ruler {
+    height: 30px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ruler-ticks {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    gap: 3.4px;
+  }
+  .tick {
+    width: 1px;
+    background: rgba(255,255,255,0.18);
+    flex-shrink: 0;
+  }
+  .tick.major { height: 60%; background: rgba(255,255,255,0.5); }
+  .tick.medium { height: 38%; background: rgba(255,255,255,0.28); }
+  .tick.minor { height: 18%; }
+  .cursor {
+    position: absolute;
+    left: 50%;
+    top: 8%;
+    width: 2px;
+    height: 84%;
+    background: white;
+    border-radius: 1px;
+  }
+
+  /* presets row */
+  .presets {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .preset-btn {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.45);
+    padding: 2px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .preset-btn.active {
+    background: rgba(255,255,255,0.22);
+    color: #fff;
+  }
+  .dots {
+    margin-left: auto;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 1px;
+  }
+
+  /* bottom row */
+  .bottom-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-bottom: 2px;
+  }
+  .start-btn {
+    font-size: 13px;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+  }
+  .time-display {
+    display: flex;
+    align-items: baseline;
+    gap: 1px;
+  }
+  .time-num {
+    font-size: 28px;
+    font-weight: 100;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+  }
+  .time-unit {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.32);
+    margin-right: 6px;
+  }
+
+  /* ─── Update banner (the new part) ─── */
+  .update-banner {
+    border-top: 0.5px solid rgba(255,255,255,0.07);
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.25s ease;
+    opacity: 0;
+  }
+  .update-banner.visible {
+    max-height: 200px;
+    opacity: 1;
+  }
+
+  /* state: just the "update available" strip */
+  .banner-idle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+  }
+  .banner-idle-left {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .update-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.55);
+    flex-shrink: 0;
+  }
+  .update-text {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+  }
+  .update-text strong {
+    color: rgba(255,255,255,0.75);
+    font-weight: 500;
+  }
+  .update-cta {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.1);
+    border: 0.5px solid rgba(255,255,255,0.12);
+    transition: background 0.15s;
+  }
+  .update-cta:hover { background: rgba(255,255,255,0.16); }
+
+  /* state: downloading progress */
+  .banner-downloading {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .banner-downloading-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .dl-label { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .dl-pct   { font-size: 11px; font-family: monospace; color: rgba(255,255,255,0.4); }
+  .progress-track {
+    height: 2px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: rgba(255,255,255,0.5);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.25s linear;
+  }
+
+  /* state: install prompt */
+  .banner-install {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+  }
+  .install-text {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+  }
+  .install-text strong { color: rgba(255,255,255,0.75); font-weight: 500; }
+  .install-btn {
+    font-size: 11px;
+    font-weight: 500;
+    color: #000;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.82);
+    border: none;
+    transition: opacity 0.15s;
+  }
+  .install-btn:hover { opacity: 0.85; }
+
+  /* demo tabs */
+  .tabs {
+    display: flex;
+    gap: 8px;
+  }
+  .tab {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.35);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    transition: all 0.15s;
+  }
+  .tab.active {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.75);
+    border-color: rgba(255,255,255,0.14);
+  }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <div class="tab" onclick="setMode('none',this)">No update</div>
+  <div class="tab active" onclick="setMode('available',this)">Update available</div>
+  <div class="tab" onclick="setMode('downloading',this)">Downloading</div>
+  <div class="tab" onclick="setMode('install',this)">Ready to install</div>
+</div>
+
+<!-- Rift popover mockup -->
+<div class="popover">
+
+  <!-- ── existing Rift UI (unchanged) ── -->
+  <div class="main-content">
+    <div class="ruler">
+      <div class="ruler-ticks" id="ticks"></div>
+      <div class="cursor"></div>
+    </div>
+    <div class="presets">
+      <span class="preset-btn">5m</span>
+      <span class="preset-btn">20m</span>
+      <span class="preset-btn active">50m</span>
+      <span class="dots">···</span>
+    </div>
+    <div class="bottom-row">
+      <span class="start-btn">start</span>
+      <div class="time-display">
+        <span class="time-num">00</span><span class="time-unit">H</span>
+        <span class="time-num">50</span><span class="time-unit">M</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── update banner (slides in below) ── -->
+  <div class="update-banner" id="banner">
+
+    <!-- idle: just shows "update available" strip -->
+    <div class="banner-idle" id="b-idle">
+      <div class="banner-idle-left">
+        <div class="update-dot"></div>
+        <span class="update-text">New version <strong>v1.1</strong> available</span>
+      </div>
+      <span class="update-cta" onclick="setMode('downloading', document.querySelectorAll('.tab')[2])">Update</span>
+    </div>
+
+    <!-- downloading -->
+    <div class="banner-downloading" id="b-dl">
+      <div class="banner-downloading-row">
+        <span class="dl-label">Downloading v1.1…</span>
+        <span class="dl-pct" id="pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog"></div>
+      </div>
+    </div>
+
+    <!-- ready to install -->
+    <div class="banner-install" id="b-install">
+      <span class="install-text">v1.1 ready — <strong>restart to apply</strong></span>
+      <button class="install-btn">Install & Restart</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="label">Tabs show different states of the banner</div>
+
+<script>
+  // Build ruler ticks
+  const tc = document.getElementById('ticks');
+  for (let i = 0; i <= 90; i++) {
+    const d = document.createElement('div');
+    d.className = 'tick' + (i%30===0?' major':i%15===0?' medium':'');
+    const h = i%30===0?65:i%15===0?40:i%5===0?28:15;
+    d.style.height = h+'%';
+    tc.appendChild(d);
+  }
+
+  function setMode(mode, tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    if (tab) tab.classList.add('active');
+
+    const banner = document.getElementById('banner');
+    const bIdle    = document.getElementById('b-idle');
+    const bDl      = document.getElementById('b-dl');
+    const bInstall = document.getElementById('b-install');
+
+    // hide all sub-states
+    bIdle.style.display = 'none';
+    bDl.style.display   = 'none';
+    bInstall.style.display = 'none';
+
+    if (mode === 'none') {
+      banner.classList.remove('visible');
+      return;
+    }
+
+    banner.classList.add('visible');
+
+    if (mode === 'available') {
+      bIdle.style.display = 'flex';
+    } else if (mode === 'downloading') {
+      bDl.style.display = 'flex';
+      animateProgress();
+    } else if (mode === 'install') {
+      bInstall.style.display = 'flex';
+    }
+  }
+
+  function animateProgress() {
+    const fill = document.getElementById('prog');
+    const pct  = document.getElementById('pct');
+    let v = 0;
+    fill.style.width = '0%';
+    pct.textContent = '0%';
+    clearInterval(window._dlTimer);
+    window._dlTimer = setInterval(() => {
+      v = Math.min(v + Math.random() * 7 + 2, 100);
+      fill.style.width = v + '%';
+      pct.textContent = Math.round(v) + '%';
+      if (v >= 100) {
+        clearInterval(window._dlTimer);
+        setTimeout(() => setMode('install', document.querySelectorAll('.tab')[3]), 300);
+      }
+    }, 100);
+  }
+
+  // Start with "update available" shown
+  setMode('available', document.querySelectorAll('.tab')[1]);
+</script>
+</body>
+</html>

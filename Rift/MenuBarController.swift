@@ -6,6 +6,7 @@ class MenuBarController: NSObject {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var timerManager: TimerManager
+    private var updateStore: UpdateStore
     private var floatingWindowController: FloatingWindowController?
     private var cancellables: [Any] = []
     private var globalClickMonitor: Any?
@@ -13,8 +14,9 @@ class MenuBarController: NSObject {
     /// Fixed pill width so the menu bar icon never jumps
     private var fixedPillWidth: CGFloat = 0
 
-    override init() {
+    init(updateStore: UpdateStore) {
         timerManager = TimerManager()
+        self.updateStore = updateStore
         super.init()
 
         computeFixedPillWidth()
@@ -71,14 +73,24 @@ class MenuBarController: NSObject {
         popover.contentSize = NSSize(width: 340, height: 120)
         popover.behavior = .transient
         popover.animates = true
-        let vc = NSHostingController(rootView: TimerPopoverView(timerManager: timerManager))
+        let view = TimerPopoverView(timerManager: timerManager, updateStore: updateStore)
+        let vc = NSHostingController(rootView: view)
         vc.view.appearance = NSAppearance(named: .darkAqua)
         popover.contentViewController = vc
         self.popover = popover
     }
 
+
     func showPopover() {
         guard let button = statusItem?.button else { return }
+        // Adjust height based on whether update banner is visible
+        let hasBanner = MainActor.assumeIsolated {
+            switch updateStore.state {
+            case .available, .downloading, .downloaded, .installing: true
+            default: false
+            }
+        }
+        popover?.contentSize = NSSize(width: 340, height: hasBanner ? 156 : 120)
         popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover?.contentViewController?.view.window?.makeKey()
         startGlobalClickMonitor()

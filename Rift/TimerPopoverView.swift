@@ -4,6 +4,7 @@ import SwiftUI
 
 struct TimerPopoverView: View {
     @ObservedObject var timerManager: TimerManager
+    @ObservedObject var updateStore: UpdateStore
     @State private var showSettings = false
     @State private var dismissDigitEditing = false
 
@@ -14,24 +15,39 @@ struct TimerPopoverView: View {
     private var presets: [Int] { [p1, p2, p3] }
     private let bg = Color(red: 0.13, green: 0.13, blue: 0.13)
 
+    private var showBanner: Bool {
+        switch updateStore.state {
+        case .available, .downloading, .downloaded, .installing: return true
+        default: return false
+        }
+    }
+
     var body: some View {
-        ZStack {
-            // Background tap to dismiss digit editing
-            bg.ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    dismissDigitEditing.toggle()
-                    NSApp.windows.forEach { $0.makeFirstResponder(nil) }
-                }
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
+            // ── existing UI (unchanged) ──
+            ZStack {
+                bg.ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        dismissDigitEditing.toggle()
+                        NSApp.windows.forEach { $0.makeFirstResponder(nil) }
+                    }
                 switch timerManager.state {
-                case .idle:                idleView
-                case .running, .paused:    runningView
-                case .completed:           completedView
+                case .idle:             idleView
+                case .running, .paused: runningView
+                case .completed:        completedView
                 }
             }
+            .frame(width: 340, height: 120)
+
+            // ── update banner (slides in below) ──
+            if showBanner {
+                UpdateBannerView(updateStore: updateStore)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
-        .frame(width: 340, height: 120)
+        .frame(width: 340)
+        .animation(.easeInOut(duration: 0.22), value: showBanner)
         .onKeyPress(.space) { handleSpaceKey(); return .handled }
     }
 
@@ -180,6 +196,110 @@ struct TimerPopoverView: View {
         case .paused:  timerManager.resume()
         default: break
         }
+    }
+}
+
+// MARK: - Update Banner
+
+struct UpdateBannerView: View {
+    @ObservedObject var updateStore: UpdateStore
+    private let bg = Color(red: 0.13, green: 0.13, blue: 0.13)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider().opacity(0.15)
+            ZStack {
+                bg
+                content
+            }
+            .frame(height: 36)
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch updateStore.state {
+        case .available(let version, _):
+            HStack {
+                Circle()
+                    .fill(Color.white.opacity(0.45))
+                    .frame(width: 5, height: 5)
+                Text("New version \(Text("v\(version)").fontWeight(.medium).foregroundColor(.white.opacity(0.75))) available")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.4))
+                Spacer()
+                Button("Update") { updateStore.downloadUpdate() }
+                    .buttonStyle(BannerButtonStyle(filled: false))
+            }
+            .padding(.horizontal, 14)
+
+        case .downloading(let progress):
+            HStack(spacing: 10) {
+                Text("Downloading…")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.4))
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(Color.white.opacity(0.1))
+                            .frame(height: 2)
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(Color.white.opacity(0.5))
+                            .frame(width: geo.size.width * CGFloat(progress), height: 2)
+                            .animation(.linear(duration: 0.2), value: progress)
+                    }
+                }
+                .frame(height: 2)
+                Text("\(Int(progress * 100))%")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.3))
+                    .frame(width: 30, alignment: .trailing)
+            }
+            .padding(.horizontal, 14)
+
+        case .downloaded:
+            HStack {
+                Text("Ready to install")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.4))
+                Spacer()
+                Button("Install & Restart") { updateStore.installUpdate() }
+                    .buttonStyle(BannerButtonStyle(filled: true))
+            }
+            .padding(.horizontal, 14)
+
+        case .installing:
+            HStack(spacing: 8) {
+                ProgressView().scaleEffect(0.55).tint(.white.opacity(0.4))
+                Text("Installing…")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.35))
+            }
+            .frame(maxWidth: .infinity)
+
+        default:
+            EmptyView()
+        }
+    }
+}
+
+struct BannerButtonStyle: ButtonStyle {
+    let filled: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(filled ? .black : .white.opacity(0.65))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(filled ? Color.white.opacity(0.82) : Color.white.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(filled ? Color.clear : Color.white.opacity(0.12), lineWidth: 0.5)
+                    )
+            )
+            .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }
 
