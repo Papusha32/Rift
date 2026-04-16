@@ -17,7 +17,11 @@
 		A1000008 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000008 /* SoundManager.swift */; };
 		A1000009 /* PresetModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000009 /* PresetModel.swift */; };
 		A100000A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B100000A /* Assets.xcassets */; };
-		A100000B /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B100000B /* Info.plist */; };
+		ED4CDCE62F91977300F095DE /* UpdateModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED4CDCE12F91977300F095DE /* UpdateModels.swift */; };
+		ED4CDCE72F91977300F095DE /* UpdateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED4CDCE32F91977300F095DE /* UpdateStore.swift */; };
+		ED4CDCE82F91977300F095DE /* UpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED4CDCE42F91977300F095DE /* UpdateView.swift */; };
+		ED4CDCE92F91977300F095DE /* UpdateWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED4CDCE52F91977300F095DE /* UpdateWindowController.swift */; };
+		ED4CDCEA2F91977300F095DE /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED4CDCE22F91977300F095DE /* UpdateService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +37,11 @@
 		B100000A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B100000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C1000001 /* Rift.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rift.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ED4CDCE12F91977300F095DE /* UpdateModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateModels.swift; sourceTree = "<group>"; };
+		ED4CDCE22F91977300F095DE /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateService.swift; sourceTree = "<group>"; };
+		ED4CDCE32F91977300F095DE /* UpdateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateStore.swift; sourceTree = "<group>"; };
+		ED4CDCE42F91977300F095DE /* UpdateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateView.swift; sourceTree = "<group>"; };
+		ED4CDCE52F91977300F095DE /* UpdateWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateWindowController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,6 +58,11 @@
 		E1000000 /* Rift */ = {
 			isa = PBXGroup;
 			children = (
+				ED4CDCE12F91977300F095DE /* UpdateModels.swift */,
+				ED4CDCE22F91977300F095DE /* UpdateService.swift */,
+				ED4CDCE32F91977300F095DE /* UpdateStore.swift */,
+				ED4CDCE42F91977300F095DE /* UpdateView.swift */,
+				ED4CDCE52F91977300F095DE /* UpdateWindowController.swift */,
 				B1000001 /* RiftApp.swift */,
 				B1000002 /* TimerManager.swift */,
 				B1000003 /* MenuBarController.swift */,
@@ -72,7 +86,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		E1000002 /* Root */ = {
+		E1000002 = {
 			isa = PBXGroup;
 			children = (
 				E1000000 /* Rift */,
@@ -124,7 +138,7 @@
 				en,
 				Base,
 			);
-			mainGroup = E1000002 /* Root */;
+			mainGroup = E1000002;
 			productRefGroup = E1000001 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -157,6 +171,11 @@
 				A1000005 /* FloatingWindowController.swift in Sources */,
 				A1000006 /* FloatingDisplayView.swift in Sources */,
 				A1000007 /* SettingsView.swift in Sources */,
+				ED4CDCE62F91977300F095DE /* UpdateModels.swift in Sources */,
+				ED4CDCE72F91977300F095DE /* UpdateStore.swift in Sources */,
+				ED4CDCE82F91977300F095DE /* UpdateView.swift in Sources */,
+				ED4CDCE92F91977300F095DE /* UpdateWindowController.swift in Sources */,
+				ED4CDCEA2F91977300F095DE /* UpdateService.swift in Sources */,
 				A1000008 /* SoundManager.swift in Sources */,
 				A1000009 /* PresetModel.swift in Sources */,
 			);
