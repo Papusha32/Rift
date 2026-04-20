@@ -2,6 +2,20 @@
 
 A minimal macOS menu bar timer app. Set a duration, start the countdown, and get a gentle sound notification when time's up.
 
+## Install
+
+Paste this into Terminal and press Enter:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Papusha32/Rift/main/install.sh)"
+```
+
+That's it — the installer downloads the latest release, places Rift in `/Applications`, and launches it. Look for the timer pill in your menu bar.
+
+Rift auto-updates itself from now on: when a new version ships, you'll see a banner inside the popover with a one-click update button.
+
+> **Prefer manual install?** Download the latest `Rift.dmg` from [Releases](https://github.com/Papusha32/Rift/releases), open it, drag `Rift.app` into `Applications`. On first launch, right-click the app → **Open** → **Open** (needed once because the app isn't signed with a paid Apple Developer certificate).
+
 ## Features
 
 - **Menu bar pill** — always visible countdown in the macOS menu bar
@@ -10,15 +24,16 @@ A minimal macOS menu bar timer app. Set a duration, start the countdown, and get
 - **Gentle alarm sounds** — curated system sounds (Glass, Breeze, Crystal, etc.) with adjustable volume and auto-mute
 - **Floating timer** — optional always-on-top overlay during countdown
 - **Launch at login** — start automatically with macOS
+- **Auto-updates** — in-app banner when a new version is released on GitHub
 - **Persisted state** — last used time and presets survive app restarts
 
 ## Requirements
 
 - macOS 14.0+
-- Xcode 15+
-- Swift 5.9+
 
-## Setup
+## Build from source
+
+Requires Xcode 15+ and Swift 5.9+.
 
 1. Clone the repo:
    ```bash
