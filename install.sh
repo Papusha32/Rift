@@ -53,8 +53,8 @@ fi
 
 # 4. Mount DMG
 echo -e "${BLUE}→${RESET} Mounting DMG"
-MOUNT=$(hdiutil attach "$TMP_DMG" -nobrowse -quiet | grep '/Volumes/' | head -1 | awk -F'\t' '{print $NF}')
-if [ -z "$MOUNT" ]; then
+MOUNT=$(hdiutil attach "$TMP_DMG" -nobrowse 2>/dev/null | grep '/Volumes/' | head -1 | awk -F'\t' '{print $NF}')
+if [ -z "$MOUNT" ] || [ ! -d "$MOUNT/$APP_NAME.app" ]; then
     echo -e "${RED}✗${RESET} Failed to mount DMG"
     exit 1
 fi
