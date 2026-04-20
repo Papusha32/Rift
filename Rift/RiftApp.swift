@@ -36,6 +36,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         menuBarController = MenuBarController(updateStore: updateStore)
         updateStore.checkForUpdates()
+        updateStore.startPeriodicChecks()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

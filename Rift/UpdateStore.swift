@@ -6,6 +6,9 @@ final class UpdateStore: ObservableObject {
     @Published var state: UpdateState = .idle
 
     private let service = UpdateService()
+    private var checkTimer: Timer?
+
+    private let checkInterval: TimeInterval = 4 * 60 * 60   // 4 hours
 
     var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -14,6 +17,15 @@ final class UpdateStore: ObservableObject {
     // MARK: - Check for updates (silent on failure)
 
     func checkForUpdates() {
+        // Skip if a download/install is already in progress —
+        // a new result would overwrite that state.
+        switch state {
+        case .downloading, .downloaded, .installing:
+            return
+        default:
+            break
+        }
+
         Task {
             do {
                 if let update = try await service.checkForUpdate() {
@@ -23,6 +35,19 @@ final class UpdateStore: ObservableObject {
                 // Not critical — user just won't see update notification
             }
         }
+    }
+
+    // MARK: - Periodic checks
+
+    func startPeriodicChecks() {
+        checkTimer?.invalidate()
+        checkTimer = Timer.scheduledTimer(withTimeInterval: checkInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.checkForUpdates() }
+        }
+    }
+
+    deinit {
+        checkTimer?.invalidate()
     }
 
     // MARK: - Download
@@ -61,22 +86,28 @@ final class UpdateStore: ObservableObject {
         // 5. Launches the new version
         let script = """
         #!/bin/bash
+        set -e
+        exec 2>/tmp/rift-update.log
+
         # Wait for Rift to quit
         while pgrep -x "Rift" > /dev/null 2>&1; do sleep 0.3; done
         sleep 0.5
 
         # Mount DMG
         MOUNT=$(hdiutil attach '\(dmgPath)' -nobrowse 2>/dev/null | grep '/Volumes/' | head -1 | awk -F'\\t' '{print $NF}')
-        [ -z "$MOUNT" ] && exit 1
+        if [ -z "$MOUNT" ] || [ ! -d "$MOUNT/Rift.app" ]; then
+            echo "Mount failed or Rift.app missing in DMG"
+            exit 1
+        fi
 
-        # Install
+        # Install (critical — abort on failure)
         rm -rf /Applications/Rift.app
         cp -R "$MOUNT/Rift.app" /Applications/
-        xattr -cr /Applications/Rift.app
+        xattr -cr /Applications/Rift.app || true
 
-        # Cleanup
-        hdiutil detach "$MOUNT" -quiet 2>/dev/null
-        rm -f '\(dmgPath)' '\(scriptPath)'
+        # Cleanup (best effort — don't abort)
+        hdiutil detach "$MOUNT" -quiet 2>/dev/null || true
+        rm -f '\(dmgPath)' '\(scriptPath)' || true
 
         # Launch new version
         open /Applications/Rift.app

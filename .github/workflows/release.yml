@@ -20,6 +20,12 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" Rift/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Rift/Info.plist
+
       - name: Build app (unsigned)
         run: |
           xcodebuild \

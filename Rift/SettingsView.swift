@@ -19,6 +19,10 @@ struct SettingsView: View {
 
     private let labelColor = Color(white: 0.55)
 
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // --- Timer Presets (3 slots) ---
@@ -114,12 +118,16 @@ struct SettingsView: View {
             divider
 
             HStack {
+                Text("version \(appVersion)")
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(white: 0.32))
                 Spacer()
                 Button("Quit Rift") { NSApp.terminate(nil) }
                     .font(.system(size: 12))
                     .foregroundColor(Color(white: 0.45))
                     .buttonStyle(.plain)
                 Spacer()
+                Color.clear.frame(width: 44)
             }
         }
         .padding(14)
