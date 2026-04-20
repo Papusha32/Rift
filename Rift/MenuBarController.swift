@@ -9,7 +9,10 @@ class MenuBarController: NSObject {
     private var updateStore: UpdateStore
     private var floatingWindowController: FloatingWindowController?
     private var cancellables: [Any] = []
+    private var resignActiveObserver: NSObjectProtocol?
+    private var workspaceObserver: NSObjectProtocol?
     private var globalClickMonitor: Any?
+    private var localClickMonitor: Any?
 
     /// Fixed pill width so the menu bar icon never jumps
     private var fixedPillWidth: CGFloat = 0
@@ -83,7 +86,6 @@ class MenuBarController: NSObject {
 
     func showPopover() {
         guard let button = statusItem?.button else { return }
-        // Adjust height based on whether update banner is visible
         let hasBanner = MainActor.assumeIsolated {
             switch updateStore.state {
             case .available, .downloading, .downloaded, .installing: true
@@ -93,27 +95,77 @@ class MenuBarController: NSObject {
         popover?.contentSize = NSSize(width: 340, height: hasBanner ? 156 : 120)
         popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover?.contentViewController?.view.window?.makeKey()
-        startGlobalClickMonitor()
+        startDismissObservers()
     }
 
     private func closePopover() {
-        popover?.performClose(nil)
-        stopGlobalClickMonitor()
+        stopDismissObservers()
+        popover?.close()
     }
 
-    private func startGlobalClickMonitor() {
-        stopGlobalClickMonitor()
-        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            guard self?.popover?.isShown == true else { return }
-            self?.closePopover()
+    /// Multiple observers — `.transient` + SwiftUI sub-popover sometimes suppresses
+    /// individual dismiss signals in accessory apps, so we layer redundant triggers.
+    private func startDismissObservers() {
+        stopDismissObservers()
+
+        resignActiveObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in self?.dismissIfShown() }
+
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil, queue: .main
+        ) { [weak self] note in
+            let bid = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.bundleIdentifier
+            if bid != Bundle.main.bundleIdentifier { self?.dismissIfShown() }
+        }
+
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]
+        ) { [weak self] _ in self?.dismissIfShown() }
+
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]
+        ) { [weak self] event in
+            // Close only if click landed outside every Rift popover window
+            if let self, self.isClickOutsidePopovers(event) {
+                DispatchQueue.main.async { self.dismissIfShown() }
+            }
+            return event
         }
     }
 
-    private func stopGlobalClickMonitor() {
-        if let monitor = globalClickMonitor {
-            NSEvent.removeMonitor(monitor)
-            globalClickMonitor = nil
+    private func stopDismissObservers() {
+        if let obs = resignActiveObserver {
+            NotificationCenter.default.removeObserver(obs)
+            resignActiveObserver = nil
         }
+        if let obs = workspaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(obs)
+            workspaceObserver = nil
+        }
+        if let m = globalClickMonitor { NSEvent.removeMonitor(m); globalClickMonitor = nil }
+        if let m = localClickMonitor  { NSEvent.removeMonitor(m); localClickMonitor  = nil }
+    }
+
+    private func dismissIfShown() {
+        guard popover?.isShown == true else { return }
+        closePopover()
+    }
+
+    /// Returns true if the click event is not inside any app window (main popover, SwiftUI sub-popover, menu bar button).
+    private func isClickOutsidePopovers(_ event: NSEvent) -> Bool {
+        let clickWindow = event.window
+        if clickWindow == nil { return true }
+        // If click landed in the status bar button itself, let handleButtonClick manage toggling
+        if clickWindow == statusItem?.button?.window { return false }
+        // Click inside any NSPopover window (main or sub) → keep open
+        let popoverWindowClass: AnyClass? = NSClassFromString("_NSPopoverWindow")
+        if let cls = popoverWindowClass, let w = clickWindow, w.isKind(of: cls) {
+            return false
+        }
+        return true
     }
 
     @objc private func togglePopover() {
